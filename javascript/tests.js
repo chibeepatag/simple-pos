@@ -27,28 +27,28 @@ QUnit.test("Set Invoice Customer", function( assert ){
 
 QUnit.test("Toggle Tax", function(assert){
 	simplePos.reset();
-	simplePos.toggleTax();
-	assert.equal(simplePos.settings['enable_compute_tax'].value, false, "Disable tax")
-	simplePos.toggleTax();
-	assert.equal(simplePos.settings['enable_compute_tax'].value, true, "Disable tax")
+	simplePos.toggleEnableTax();
+	assert.equal(simplePos.settings['enableTax'].value, false, "Disable tax")
+	simplePos.toggleEnableTax();
+	assert.equal(simplePos.settings['enableTax'].value, true, "Disable tax")
 })
 
 QUnit.test("Toggle Tax Inclusive", function(assert){
 	simplePos.reset();
 	simplePos.toggleTaxInclusive();
-	assert.equal(simplePos.settings['tax_inclusive'].value, false, "Tax inclusive")
+	assert.equal(simplePos.settings['taxInclusive'].value, false, "Tax inclusive")
 
 	simplePos.toggleTaxInclusive();
-	assert.equal(simplePos.settings['tax_inclusive'].value, true, "Tax inclusive")
+	assert.equal(simplePos.settings['taxInclusive'].value, true, "Tax inclusive")
 })
 
 
 QUnit.test("Toggle Single Tax", function(assert){
 	simplePos.reset();
 	simplePos.toggleSingleTax();
-	assert.equal(simplePos.settings['single_tax'].value, false, "Single tax")
+	assert.equal(simplePos.settings['singleTax'].value, false, "Single tax")
 	simplePos.toggleSingleTax();
-	assert.equal(simplePos.settings['single_tax'].value, true, "Single tax")
+	assert.equal(simplePos.settings['singleTax'].value, true, "Single tax")
 
 })
 

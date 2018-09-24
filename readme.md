@@ -1,13 +1,13 @@
 Test Driven Development
-0. Setting the expectations
-1. What is  TDD?
-2. Why is TDD important?
-3. The Red Green Refactor Cycle
-3. How to implement TDD
-4. Invoice Tax Computation Scenarios
-5. Implementing TDD using Javascipt
-6. Exercise
-7. Implementing TDD using Rails
+1. Setting the expectations
+2. What is  TDD?
+3. Why is TDD important?
+4. The Red Green Refactor Cycle
+5. How to implement TDD
+6. Invoice Tax Computation Scenarios
+7. Implementing TDD using Javascipt
+8. Exercise
+9. Implementing TDD using Rails
 
 Training duration: 3 hours
 Javascript Module Design Pattern
@@ -36,3 +36,17 @@ Unit tests check blocks of code to ensure that they all run as expected.
    show a sample of running a test suite
 
 3. 
+
+
+
+How to compute tax of invoice line
+1. Compute discount
+2. Is the customer tax exempt? Is the product tax exempt?
+3. Compute Tax 
+	Single Tax
+	Multiple Tax
+		Store wide taxes
+		Product specific taxes
+4. Compute line subtotal and subtotal without tax
+5. Update invoice
+6. Update totals view

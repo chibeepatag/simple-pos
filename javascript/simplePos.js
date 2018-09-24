@@ -1,5 +1,7 @@
 $("document").ready(function(){
-	simplePos.listProductsCustomersSettings();
+	simplePos.listCustomers();
+    simplePos.listProducts();
+    simplePos.listSettings();
 });
 
 var simplePos = (function() {
@@ -58,15 +60,20 @@ var simplePos = (function() {
  	]
 
  	const settings = {
- 		enable_compute_tax: { name: 'Enable compute tax',
+ 		enableTax: { 
+          code: 'enableTax',
+          name: 'Enable compute tax',
  		  value: true
  		},
- 		single_tax: { name: 'Single Tax',
+ 		singleTax: { 
+          code:  'singleTax',
+          name: 'Single Tax',
  		  value: true
  		},
- 		tax_inclusive: {
+ 		taxInclusive: {
+          code: 'taxInclusive',
  		  name: 'Tax Inclusive',
- 		  value: false
+ 		  value: true
  		}
  	}
 
@@ -112,20 +119,21 @@ var simplePos = (function() {
  	}
 
  	function listSettings(){
- 		console.table(settings)
  		var html = ""
  		var settings_values = Object.values(settings)
  		settings_values.forEach(function(setting){
- 			html += `<tr><td>${setting.name}</td><td>${setting.value}</td></tr>`
+            var function_name = setting.code.charAt(0).toUpperCase() + setting.code.substring(1);
+ 			html += `<tr>
+                    <td>${setting.name}</td>
+                    <td>
+                        <input type="checkbox" checked onclick="simplePos.toggle${function_name}()">
+                        <span class="slider"></span>
+                   </td>
+                   </tr>`
+            
  		})
  		$("#settings").append(html)
  		return true;
- 	}
-
- 	function listProductsCustomersSettings(){
- 		listCustomers();
- 		listProducts();
- 		listSettings();
  	}
 
  	function setCustomer(customerId){
@@ -135,7 +143,7 @@ var simplePos = (function() {
  		openInvoice.customer = customer
  		var discount = customer.discount
  		var invoiceLines = Object.values(openInvoice.invoiceLines)
- 		invoiceLines.forEach(function(line){fa
+ 		invoiceLines.forEach(function(line){
  			line.discount = discount
  		})
  		refreshInvoice()
@@ -178,16 +186,18 @@ var simplePos = (function() {
  		$(".invoice_lines").html(html)
  	}
 
-    function toggleTax(){
-       settings['enable_compute_tax'].value = !settings['enable_compute_tax'].value;
+    function toggleEnableTax(){
+       console.log("toggleEnableTax: ", settings['enableTax'].value)
+       settings['enableTax'].value = !settings['enableTax'].value;
+       console.log("toggleEnableTax: ", settings['enableTax'].value)
     }
 
     function toggleTaxInclusive(){
-        settings['tax_inclusive'].value = !settings['tax_inclusive'].value;
+        settings['taxInclusive'].value = !settings['taxInclusive'].value;
     }
 
     function toggleSingleTax(){
-        settings['single_tax'].value = !settings['single_tax'].value;
+        settings['singleTax'].value = !settings['singleTax'].value;
     }
 
  	function reset(){
@@ -196,13 +206,12 @@ var simplePos = (function() {
  		openInvoice.amount = 0
  		openInvoice.tax = 0
 
-        settings['enable_compute_tax'].value = true;
-        settings['single_tax'].value = true
-        settings['tax_inclusive'].value = true
+        settings['enableTax'].value = true;
+        settings['singleTax'].value = true
+        settings['taxInclusive'].value = true
  	}
 
     return {
-    	listProductsCustomersSettings: listProductsCustomersSettings,
         listProducts: listProducts,
         listCustomers: listCustomers,
         listSettings: listSettings,
@@ -210,7 +219,7 @@ var simplePos = (function() {
         addToInvoice: addToInvoice,
         openInvoice: openInvoice,
         settings: settings,
-        toggleTax: toggleTax,
+        toggleEnableTax: toggleEnableTax,
         toggleTaxInclusive: toggleTaxInclusive,
         toggleSingleTax: toggleSingleTax, 
         reset: reset,
