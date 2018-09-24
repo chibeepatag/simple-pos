@@ -27,11 +27,12 @@ var simplePos = (function() {
  	    },
  	]
  	const customers = [
- 		{ name: 'Helen Santos',
+ 		{ id: 1,
+ 		  name: 'Helen Santos',
  		  discount: '5%',
  		  tax_exempt: false
  		},
- 		{
+ 		{ id: 2,
  		  name: 'Peter Reyes',
  		  discount: '0',
  		  tax_exempt: true
@@ -73,21 +74,35 @@ var simplePos = (function() {
 
  	function listProducts(){
  		products.forEach(function(product){
+ 		var tax_exempt = 'no'
+ 		if(product.tax_exempt){
+ 			tax_exempt = 'yes'
+ 		}
  		var html = `<tr id=product_${product.id}>
  				<td>${product.name}</td>
  				<td>${product.retail_price}</td>
- 				<td>${product.tax_exempt}</td>
+ 				<td>${tax_exempt}</td>
  				<td><button onclick="simplePos.addToInvoice(${product.id})">Add</button></td>
  			</tr>`
  		$("#products").append(html)
  		})
- 		
- 		console.table(products);
  		return true;
  	}
 
  	function listCustomers(){
- 		console.table(customers);
+ 		customers.forEach(function(customer){
+ 			var tax_exempt = 'no'
+	 		if(customer.tax_exempt){
+	 			tax_exempt = 'yes'
+	 		}
+ 			var html = `<tr id=customer_${customer.id}>
+ 				<td>${customer.name}</td>
+ 				<td>${customer.discount}</td>
+ 				<td>${tax_exempt}</td>
+ 				<td><button onclick="simplePos.setCustomer(${customer.id})">Set</button></td>
+ 				</tr>`
+ 			$("#customers").append(html)
+ 		})
  		return true;
  	}
 
@@ -102,6 +117,19 @@ var simplePos = (function() {
  		listSettings();
  	}
 
+ 	function setCustomer(customerId){
+ 		var customer = customers.find(function(customer){
+ 			return customer.id == customerId
+ 		})
+ 		openInvoice.customer = customer
+ 		var discount = customer.discount
+ 		var invoiceLines = Object.values(openInvoice.invoiceLines)
+ 		invoiceLines.forEach(function(line){
+ 			line.discount = discount
+ 		})
+ 		refreshInvoice()
+ 	}
+
  	function addToInvoice(productId){
  		var product = products.find(function(product){
  			return product.id == productId
@@ -111,11 +139,19 @@ var simplePos = (function() {
  		if(line){
  			quantity = line.quantity + 1
  		}
- 		openInvoice.invoiceLines[product.name]= {product: product, quantity: quantity, retail_price: product.retail_price}  
+ 		var discount = 0
+ 		if(openInvoice.customer){
+ 			discount = openInvoice.customer.discount
+ 		}
+ 		openInvoice.invoiceLines[product.name]= {product: product, quantity: quantity, retail_price: product.retail_price, discount: discount, subtotal: 0}  
  		refreshInvoice();
  	}
 
  	function refreshInvoice(){
+ 		var customer = openInvoice.customer
+ 		if(customer){
+ 			$("#invoice_customer").html(openInvoice.customer.name)	
+ 		}
  		var html = ""
  		var invoiceLines = Object.values(openInvoice.invoiceLines)
  		invoiceLines.forEach(function(line){
@@ -123,6 +159,8 @@ var simplePos = (function() {
  								<td>${line.product.name}</td>
  								<td>${line.product.retail_price}</td>
  								<td>${line.quantity}</td>
+ 								<td>${line.discount}</td>
+ 								<td>${line.subtotal}</td>
  							</tr>`
  			html = html.concat(line_html)
  		})
@@ -141,6 +179,7 @@ var simplePos = (function() {
         listProducts: listProducts,
         listCustomers: listCustomers,
         listSettings: listSettings,
+        setCustomer: setCustomer,
         addToInvoice: addToInvoice,
         openInvoice: openInvoice,
         resetInvoice: resetInvoice,
