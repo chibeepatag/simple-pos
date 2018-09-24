@@ -10,7 +10,6 @@ Test Driven Development
 9. Implementing TDD using Rails
 
 Training duration: 3 hours
-Javascript Module Design Pattern
 
 https://www.codecademy.com/articles/tdd-red-green-refactor
 https://medium.com/javascript-scene/tdd-the-rite-way-53c9b46f45e3
