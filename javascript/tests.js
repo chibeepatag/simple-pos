@@ -15,4 +15,14 @@ QUnit.test( "Add Product To Invoice", function( assert ) {
   assert.equal( line.quantity, 3, "Line quantity" );
 });
 
+QUnit.test("Set Invoice Customer", function( assert ){
+  simplePos.resetInvoice();
+  simplePos.setCustomer(1)
+  assert.equal( simplePos.openInvoice.customer.id, 1, "Invoice customer")
+
+  simplePos.addToInvoice(1) 
+  line = simplePos.openInvoice.invoiceLines['Nintendo Switch']
+  assert.equal(line.discount, '5%', "Customer discount")
+})
+
 
