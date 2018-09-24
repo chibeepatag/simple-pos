@@ -56,14 +56,19 @@ var simplePos = (function() {
  		  tax_rate_type: 1,
  		},
  	]
- 	const settings = [
- 		{ name: 'enable_compute_tax',
+
+ 	const settings = {
+ 		enable_compute_tax: { name: 'Enable compute tax',
  		  value: true
  		},
- 		{ name: 'single_tax',
+ 		single_tax: { name: 'Single Tax',
  		  value: true
+ 		},
+ 		tax_inclusive: {
+ 		  name: 'Tax Inclusive',
+ 		  value: false
  		}
- 	]
+ 	}
 
  	const openInvoice = {
  		invoiceLines: {},
@@ -107,7 +112,13 @@ var simplePos = (function() {
  	}
 
  	function listSettings(){
- 		console.table(settings);
+ 		console.table(settings)
+ 		var html = ""
+ 		var settings_values = Object.values(settings)
+ 		settings_values.forEach(function(setting){
+ 			html += `<tr><td>${setting.name}</td><td>${setting.value}</td></tr>`
+ 		})
+ 		$("#settings").append(html)
  		return true;
  	}
 
@@ -124,7 +135,7 @@ var simplePos = (function() {
  		openInvoice.customer = customer
  		var discount = customer.discount
  		var invoiceLines = Object.values(openInvoice.invoiceLines)
- 		invoiceLines.forEach(function(line){
+ 		invoiceLines.forEach(function(line){fa
  			line.discount = discount
  		})
  		refreshInvoice()
@@ -167,11 +178,27 @@ var simplePos = (function() {
  		$(".invoice_lines").html(html)
  	}
 
- 	function resetInvoice(){
+    function toggleTax(){
+       settings['enable_compute_tax'].value = !settings['enable_compute_tax'].value;
+    }
+
+    function toggleTaxInclusive(){
+        settings['tax_inclusive'].value = !settings['tax_inclusive'].value;
+    }
+
+    function toggleSingleTax(){
+        settings['single_tax'].value = !settings['single_tax'].value;
+    }
+
+ 	function reset(){
  		openInvoice.invoiceLines = []
  		openInvoice.customer = null
  		openInvoice.amount = 0
  		openInvoice.tax = 0
+
+        settings['enable_compute_tax'].value = true;
+        settings['single_tax'].value = true
+        settings['tax_inclusive'].value = true
  	}
 
     return {
@@ -182,6 +209,10 @@ var simplePos = (function() {
         setCustomer: setCustomer,
         addToInvoice: addToInvoice,
         openInvoice: openInvoice,
-        resetInvoice: resetInvoice,
+        settings: settings,
+        toggleTax: toggleTax,
+        toggleTaxInclusive: toggleTaxInclusive,
+        toggleSingleTax: toggleSingleTax, 
+        reset: reset,
     };
 }());
