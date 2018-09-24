@@ -65,7 +65,7 @@ var simplePos = (function() {
  	]
 
  	const openInvoice = {
- 		invoiceLines: [],
+ 		invoiceLines: {},
  		customer: null,
  		amount: 0,
  		tax: 0,
@@ -106,14 +106,19 @@ var simplePos = (function() {
  		var product = products.find(function(product){
  			return product.id == productId
  		})
- 		console.log(`Adding product: ${product.name}`)
- 		openInvoice.invoiceLines.push({product: product, quantity: 1})
+ 		var line = openInvoice.invoiceLines[product.name]
+ 		var quantity = 1
+ 		if(line){
+ 			quantity = line.quantity + 1
+ 		}
+ 		openInvoice.invoiceLines[product.name]= {product: product, quantity: quantity, retail_price: product.retail_price}  
  		refreshInvoice();
  	}
 
  	function refreshInvoice(){
  		var html = ""
- 		openInvoice.invoiceLines.forEach(function(line){
+ 		var invoiceLines = Object.values(openInvoice.invoiceLines)
+ 		invoiceLines.forEach(function(line){
  			var line_html = `<tr>
  								<td>${line.product.name}</td>
  								<td>${line.product.retail_price}</td>
@@ -121,7 +126,7 @@ var simplePos = (function() {
  							</tr>`
  			html = html.concat(line_html)
  		})
- 		$("#invoice_table").append(html)
+ 		$(".invoice_lines").html(html)
  	}
 
  	function resetInvoice(){

@@ -1,13 +1,18 @@
 QUnit.test( "Add Product To Invoice", function( assert ) {
   simplePos.resetInvoice();
+  simplePos.addToInvoice(1) 
+  line = simplePos.openInvoice.invoiceLines['Nintendo Switch']
+  assert.equal( line.product.id, 1, "Line product" );
+  assert.equal( line.quantity, 1, "Line quantity" );
+  assert.equal( line.retail_price, line.product.retail_price, "Line retail price" );
+
   simplePos.addToInvoice(1)
-  result = simplePos.openInvoice.invoiceLines.find(function(line){
-  	return line.product.id == 1
-  })
-  assert.ok( result.product.id == 1, "Passed!" );
-  assert.ok( simplePos.openInvoice.invoiceLines.length == 1, "Passed!" );
-  simplePos.addToInvoice(2)
-  assert.ok( simplePos.openInvoice.invoiceLines.length == 2, "Passed!" );
+  line = simplePos.openInvoice.invoiceLines['Nintendo Switch']
+  assert.equal( line.quantity, 2, "Line quantity" );
+
+  simplePos.addToInvoice(1)
+  line = simplePos.openInvoice.invoiceLines['Nintendo Switch']
+  assert.equal( line.quantity, 3, "Line quantity" );
 });
 
 
