@@ -49,6 +49,43 @@ QUnit.test("Toggle Single Tax", function(assert){
 	assert.equal(dbMock.settings['singleTax'].value, false, "Single tax")
 	simplePos.toggleSingleTax();
 	assert.equal(dbMock.settings['singleTax'].value, true, "Single tax")
+})
+
+QUnit.test("Compute Line Discount", function(assert){
+  simplePos.addToInvoice(1) 
+  simplePos.addToInvoice(1) 
+  simplePos.setDiscount('Nintendo Switch', '5%')
+  line = dbMock.openInvoice.invoiceLines['Nintendo Switch']
+  assert.equal(line.discount, '5%', "Discount should be 5%")
+  assert.equal(line.discount_amount, 25, "Discount amount should be 25")
+})
+
+QUnit.test("Compute Line Tax", function(assert){
 
 })
 
+QUnit.test("Compute Line Subtotal", function(assert){
+  simplePos.addToInvoice(1) 
+  simplePos.addToInvoice(1) 
+  simplePos.setDiscount('Nintendo Switch', '5%')
+  line = dbMock.openInvoice.invoiceLines['Nintendo Switch']
+  simplePos.setSubtotal(line)
+  assert.equal(line.subtotal, 475)
+})
+
+
+QUnit.test("Compute Invoice Subtotal", function(assert){
+
+})
+
+QUnit.test("Compute Invoice Discount", function(assert){
+
+})
+
+QUnit.test("Compute Invoice Total Tax", function(assert){
+
+})
+
+QUnit.test("Compute Invoice Amount Due", function(assert){
+
+})

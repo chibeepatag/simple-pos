@@ -67,10 +67,39 @@ var simplePos = (function() {
  		var discount = customer.discount
  		var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
  		invoiceLines.forEach(function(line){
- 			line.discount = discount
+ 			setDiscount(line.product.name, discount)
  		})
  		refreshInvoice()
  	}
+
+    function getDiscount(product){
+        var discount = prompt("Enter discount:", "5%");
+        setDiscount(product, discount)
+    }
+
+    function setDiscount(product, discount){
+        console.log(product, discount)
+        var line = dbMock.openInvoice.invoiceLines[product]
+        line.discount = discount
+        var discount_rate = discount.split('%')[0]
+        var discount_amount = computeDiscount(dbMock.openInvoice.invoiceLines[product].retail_price, dbMock.openInvoice.invoiceLines[product].quantity, discount_rate)
+        line.discount_amount = discount_amount
+        setSubtotal(line)
+        refreshInvoice();
+    }
+
+    function computeDiscount(retail_price, quantity, rate){
+        return retail_price * quantity * (rate/100)
+    }
+
+    function setSubtotal(line){
+        var subtotal = computeSubtotal(line)
+        line.subtotal = subtotal
+        refreshInvoice();
+    }
+    function computeSubtotal(line){
+        return line.retail_price * line.quantity - line.discount_amount
+    }
 
  	function addToInvoice(productId){
  		var product = dbMock.products.find(function(product){
@@ -85,7 +114,9 @@ var simplePos = (function() {
  		if(dbMock.openInvoice.customer){
  			discount = dbMock.openInvoice.customer.discount
  		}
- 		dbMock.openInvoice.invoiceLines[product.name]= {product: product, quantity: quantity, retail_price: product.retail_price, discount: discount, subtotal: 0}  
+        var line = {product: product, quantity: quantity, retail_price: product.retail_price, discount: discount, discount_amount: 0, subtotal: 0}
+        setSubtotal(line)
+ 		dbMock.openInvoice.invoiceLines[product.name]= line
  		refreshInvoice();
  	}
 
@@ -101,7 +132,7 @@ var simplePos = (function() {
  								<td>${line.product.name}</td>
  								<td>${line.product.retail_price}</td>
  								<td>${line.quantity}</td>
- 								<td>${line.discount}</td>
+ 								<td onclick="simplePos.getDiscount('${line.product.name}');">${line.discount}</td>
  								<td>${line.subtotal}</td>
  							</tr>`
  			html = html.concat(line_html)
@@ -137,6 +168,10 @@ var simplePos = (function() {
         listCustomers: listCustomers,
         listSettings: listSettings,
         setCustomer: setCustomer,
+        getDiscount: getDiscount,
+        setDiscount: setDiscount,
+        setSubtotal: setSubtotal,
+        computeSubtotal: computeSubtotal,
         addToInvoice: addToInvoice,
         toggleEnableTax: toggleEnableTax,
         toggleTaxInclusive: toggleTaxInclusive,
