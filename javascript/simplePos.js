@@ -107,10 +107,16 @@ var simplePos = (function() {
  		})
  		var line = dbMock.openInvoice.invoiceLines[product.name]
  		var quantity = 1
- 		if(line){
- 			quantity = line.quantity + 1
- 		}
  		var discount = 0
+        var discount_amount = 0
+        if(line){
+ 			quantity = line.quantity + 1
+            if (line.discount){
+                discount = line.discount
+                discount_amount = line.discount_amount
+            }
+ 		}
+ 		
  		if(dbMock.openInvoice.customer){
  			discount = dbMock.openInvoice.customer.discount
  		}
