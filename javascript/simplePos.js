@@ -67,24 +67,27 @@ var simplePos = (function() {
  		var discount = customer.discount
  		var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
  		invoiceLines.forEach(function(line){
- 			setDiscount(line.product.name, discount)
+ 			setDiscount(line, discount)
  		})
- 		refreshInvoice()
+ 		//refreshInvoice()
  	}
 
     function getDiscount(product){
         var discount = prompt("Enter discount:", "5%");
-        setDiscount(product, discount)
+        var line = dbMock.openInvoice.invoiceLines[product]
+        setDiscount(line, discount)
     }
 
-    function setDiscount(product, discount){
-        console.log(product, discount)
-        var line = dbMock.openInvoice.invoiceLines[product]
+    function setDiscount(line, discount){
         line.discount = discount
         var discount_rate = discount.split('%')[0]
-        var discount_amount = computeDiscount(dbMock.openInvoice.invoiceLines[product].retail_price, dbMock.openInvoice.invoiceLines[product].quantity, discount_rate)
-        line.discount_amount = discount_amount
-        setSubtotal(line)
+        var discount_amount = 0;
+        if (discount_rate > 0){
+            discount_amount = computeDiscount(line.retail_price, line.quantity, discount_rate)
+        }
+        line.discount_amount = discount_amount;
+        setTax(line);
+        setLineSubtotal(line);
         refreshInvoice();
     }
 
@@ -92,13 +95,54 @@ var simplePos = (function() {
         return retail_price * quantity * (rate/100)
     }
 
-    function setSubtotal(line){
-        var subtotal = computeSubtotal(line)
+    function computeTax(taxableSales, tax_rate){
+        var rate = tax_rate.split('%')[0]
+        var tax = (taxableSales * rate/100)
+        return tax;
+    }
+
+    function computeTaxableSale(retail_price, quantity, discount_amount, tax_rate, tax_inclusive){
+        var taxableSales = 0
+        var rate = parseFloat(tax_rate.split('%')[0])
+        if(tax_inclusive){
+            taxableSales = ((retail_price * quantity) - discount_amount)/( 1 + (rate/100))
+        }else{
+            taxableSales = (retail_price * quantity) - discount_amount
+        }
+        return taxableSales;
+    }
+
+    function setTax(line){
+        if(!line.product.tax_exempt){
+            var tax_rate = dbMock.tax_rates.find(function(_tax_rate){
+            return _tax_rate.name == 'VAT'
+            }).rate
+            var tax_inclusive = dbMock.settings['taxInclusive'].value
+            var taxableSales = computeTaxableSale(line.retail_price, line.quantity, line.discount_amount, tax_rate, tax_inclusive)
+            line.taxableSales = taxableSales;
+            line.tax_amount = parseFloat(computeTax(taxableSales, tax_rate).toFixed(2)) 
+            setLineSubtotal(line);   
+        }else{
+            line.tax_amount = 0   
+            line.taxableSales = 0;
+        } 
+    }
+
+    function setLineSubtotal(line){
+        var tax_inclusive = dbMock.settings['taxInclusive'].value
+        var subtotal = computeSubtotal(line, tax_inclusive)
         line.subtotal = subtotal
         refreshInvoice();
     }
-    function computeSubtotal(line){
-        return line.retail_price * line.quantity - line.discount_amount
+
+    function computeSubtotal(line, tax_inclusive){
+        var lineSubtotal = 0
+        if(tax_inclusive){
+            lineSubtotal = (line.retail_price * line.quantity) - line.discount_amount
+        }else{
+            lineSubtotal = (line.retail_price * line.quantity) - line.discount_amount + line.tax_amount
+        }
+        return lineSubtotal
     }
 
  	function addToInvoice(productId){
@@ -107,32 +151,36 @@ var simplePos = (function() {
  		})
  		var line = dbMock.openInvoice.invoiceLines[product.name]
  		var quantity = 1
- 		var discount = 0
+ 		var discount = "0%"
         var discount_amount = 0
         if(line){
- 			quantity = line.quantity + 1
-            if (line.discount){
-                discount = line.discount
-                discount_amount = line.discount_amount
+ 			line.quantity = line.quantity + 1
+            discount = line.discount
+ 		}else{            
+            line = {product: product, quantity: quantity, retail_price: product.retail_price}
+            if(dbMock.openInvoice.customer){
+                discount = dbMock.openInvoice.customer.discount
             }
- 		}
- 		
- 		if(dbMock.openInvoice.customer){
- 			discount = dbMock.openInvoice.customer.discount
- 		}
-        var line = {product: product, quantity: quantity, retail_price: product.retail_price, discount: discount, discount_amount: 0, subtotal: 0}
-        setSubtotal(line)
+        }
+        setDiscount(line, discount);
+        setLineSubtotal(line);
  		dbMock.openInvoice.invoiceLines[product.name]= line
  		refreshInvoice();
  	}
 
  	function refreshInvoice(){
+        setInvoiceSubtotal();
+        setInvoiceDiscount();
+        setInvoiceTotalTax();
+        setInvoiceAmount();
+
  		var customer = dbMock.openInvoice.customer
  		if(customer){
  			$("#invoice_customer").html(dbMock.openInvoice.customer.name)	
  		}
  		var html = ""
- 		var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
+        var invoice = dbMock.openInvoice;
+ 		var invoiceLines = Object.values(invoice.invoiceLines)
  		invoiceLines.forEach(function(line){
  			var line_html = `<tr>
  								<td>${line.product.name}</td>
@@ -143,7 +191,11 @@ var simplePos = (function() {
  							</tr>`
  			html = html.concat(line_html)
  		})
- 		$(".invoice_lines").html(html)
+        $(".invoice_lines").html(html)
+        $("#invoice_subtotal").html(invoice.subtotal)
+        $("#invoice_discount").html(invoice.discount_amount)
+        $("#invoice_total_tax").html(invoice.total_tax)
+        $("#amount_due").html(invoice.amount)
  	}
 
     function toggleEnableTax(){
@@ -159,15 +211,70 @@ var simplePos = (function() {
     }
 
  	function reset(){
- 		dbMock.openInvoice.invoiceLines = []
- 		dbMock.openInvoice.customer = null
- 		dbMock.openInvoice.amount = 0
- 		dbMock.openInvoice.tax = 0
+ 		resetInvoice()
+        resetSettings()
+ 	}
 
+    function resetInvoice(){
+        dbMock.openInvoice.invoiceLines = []
+        dbMock.openInvoice.customer = null
+        dbMock.openInvoice.amount = 0
+        dbMock.openInvoice.tax = 0
+    }
+
+    function resetSettings(){
         dbMock.settings['enableTax'].value = true;
         dbMock.settings['singleTax'].value = true
         dbMock.settings['taxInclusive'].value = true
- 	}
+    }
+
+    function setInvoiceSubtotal(){
+        var invoice = dbMock.openInvoice
+        var subtotal = 0;
+        var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
+        invoiceLines.forEach(function(line){
+            subtotal += line.subtotal
+        });
+
+        invoice.subtotal = subtotal;
+    }
+
+    function setInvoiceDiscount(){
+        var invoice = dbMock.openInvoice
+        var discount = 0;
+        var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
+        invoiceLines.forEach(function(line){
+            discount += line.discount_amount
+        });
+        invoice.discount_amount = discount;
+    }
+
+    function setInvoiceTotalTax(){
+        var invoice = dbMock.openInvoice
+        var total_tax = 0;
+        var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
+        invoiceLines.forEach(function(line){
+            total_tax += line.tax_amount
+        });
+        invoice.total_tax = parseFloat(total_tax.toFixed(2));
+    }
+
+    function setInvoiceAmount(){
+        var invoice = dbMock.openInvoice
+        var amount = 0;
+
+        var invoiceLines = Object.values(invoice.invoiceLines)
+        invoiceLines.forEach(function(line){
+            amount = amount + line.subtotal
+        });
+        
+        var taxInclusive = dbMock.settings['taxInclusive'].value;
+        if(taxInclusive){
+            invoice.amount = amount
+        }else{
+            invoice.amount = amount + invoice.total_tax
+        }
+    }
 
     return {
         listProducts: listProducts,
@@ -176,12 +283,21 @@ var simplePos = (function() {
         setCustomer: setCustomer,
         getDiscount: getDiscount,
         setDiscount: setDiscount,
-        setSubtotal: setSubtotal,
+        setLineSubtotal: setLineSubtotal,
+        computeTaxableSale: computeTaxableSale,
+        computeTax: computeTax,
+        setTax: setTax,
         computeSubtotal: computeSubtotal,
+        setInvoiceSubtotal: setInvoiceSubtotal,
+        setInvoiceDiscount: setInvoiceDiscount,
+        setInvoiceTotalTax: setInvoiceTotalTax,
+        setInvoiceAmount: setInvoiceAmount,
         addToInvoice: addToInvoice,
         toggleEnableTax: toggleEnableTax,
         toggleTaxInclusive: toggleTaxInclusive,
         toggleSingleTax: toggleSingleTax, 
         reset: reset,
+        resetSettings: resetSettings,
+        resetInvoice: resetInvoice,
     };
 }());
