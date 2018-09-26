@@ -64,12 +64,13 @@ var simplePos = (function() {
  			return customer.id == customerId
  		})
  		dbMock.openInvoice.customer = customer
+        $("#invoice_customer").html(dbMock.openInvoice.customer.name)
  		var discount = customer.discount
  		var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
  		invoiceLines.forEach(function(line){
  			setDiscount(line, discount)
  		})
- 		//refreshInvoice()
+ 		
  	}
 
     function getDiscount(product){
