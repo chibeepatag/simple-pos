@@ -267,13 +267,7 @@ var simplePos = (function() {
         invoiceLines.forEach(function(line){
             amount = amount + line.subtotal
         });
-        
-        var taxInclusive = dbMock.settings['taxInclusive'].value;
-        if(taxInclusive){
-            invoice.amount = amount
-        }else{
-            invoice.amount = amount + invoice.total_tax
-        }
+        invoice.amount = parseFloat(amount.toFixed(2))
     }
 
     return {
