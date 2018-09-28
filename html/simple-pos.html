@@ -1,88 +1,86 @@
+<!doctype html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
   <title>Simple POS</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="../css/app.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="../javascript/dbMock.js"></script>
   <script src="../javascript/simplePos.js"></script>
 </head>
 <body>
-	<div class="container">
-	<h1>Simple POS</h1>
-	 <div class="row">
-	 	<div class="col-sm">
-		<h2>Products</h2>
-			<table id="products" class="table-bordered">
-				<thead>
-					<td>Name</td>
-					<td>Retail Price</td>
-					<td>Tax Exempt</td>
-					<td></td>
-				</thead>
-			</table>
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+	  <a class="navbar-brand" href="#">Simple POS</a>
+	</nav>
+	<div class="container-fluid d-flex flex-column">
+		<nav>
+			<div class="nav nav-tabs" id="list-tab" role="tablist"></div>
+		</nav>
+
+		<div id="options" class="tab-content border-bottom">
+		 	<div class="tab-pane fade" role="tabpanel" id="tab_products">
+				<div class="row flex-wrap" id="products"></div>
+			</div>
+			<div class="tab-pane fade" role="tabpanel" id="tab_customers">
+				<div class="row flex-wrap" id="customers"></div>
+				<!-- <table id="customers">
+					<thead>
+						<td>Name</td>
+						<td>Discount</td>
+						<td>Tax Exempt</td>
+						<td></td>
+					</thead>
+				</table> -->
+			</div>
+			<div class="tab-pane fade" role="tabpanel" id="tab_settings">
+				<!-- <table id="settings"> </table> -->
+				<div id="settings" class='w-100 d-flex flex-column flex-wrap'> </div>
+			</div>	
 		</div>
-		<div class="col-sm">
-			<h2>Customers</h2>
-			<table id="customers">
-				<thead>
-					<td>Name</td>
-					<td>Discount</td>
-					<td>Tax Exempt</td>
-					<td></td>
-				</thead>
-			</table>
+
+		<div class="row">
+			<h3 class="col-12">Invoice</h3>
+			<div class="col-md-6">
+				<label class='h5'>Customer: </label> <span id="invoice_customer"></span><br/>
+				<table id="invoice_table" class="table table-sm table-bordered">
+					<thead>
+					<tr>
+						<td>Product</td>
+						<td>Retail Price</td>
+						<td>Qty.</td>
+						<td class="discount">Discount</td>
+						<td class="line_subtotal">Subtotal</td>
+					</tr>
+					</thead>
+					<tbody class="invoice_lines"></tbody>
+				</table>
+			</div>
+			<div class="col-md-3">
+				<h5>Summary:</h5>
+				<table id="summary">
+					<tr>
+						<td>Subtotal:</td>
+						<td id="invoice_subtotal">0</td>
+					</tr>
+					<tr>
+						<td>Discount:</td>
+						<td id="invoice_discount">0</td>
+					</tr>
+					<tr>
+						<td>Total Tax:</td>
+						<td id="invoice_total_tax">0</td>
+					</tr>
+					<tr class='border-dark border-top'>
+						<td>Amount Due:</td>
+						<td id="amount_due">0</td>
+					</tr>
+				</table>
+			</div>
+
 		</div>
-		<div class="col-sm">
-			<h2>Settings</h2>
-			<table id="settings">
-				
-			</table>
-		</div>	
-	</div>
-	<hr/>
-	<br/>
-	<div class="row">
-		<h3>Invoice</h3>
-	</div>
-	<div id="invoice" class="row">
-	<div class="col-sm">
-		<label>Customer: </label> <span id="invoice_customer"></span><br/>
-		<table id="invoice_table" class="table-bordered">
-			<thead>
-			<tr>
-				<td>Product</td>
-				<td>Retail Price</td>
-				<td>Quantity</td>
-				<td class="discount">Discount</td>
-				<td class="line_subtotal">Subtotal</td>
-			</tr>
-			</thead>
-			<tbody class="invoice_lines"></tbody>
-		</table>
-	</div>
-	<div class="col-sm">
-		<h3>Summary:</h3>
-		<table>
-			<tr>
-				<td>Subtotal:</td>
-				<td id="invoice_subtotal">0</td>
-			</tr>
-			<tr>
-				<td>Discount:</td>
-				<td id="invoice_discount">0</td>
-			</tr>
-			<tr>
-				<td>Total Tax:</td>
-				<td id="invoice_total_tax">0</td>
-			</tr>
-			<tr>
-				<td>Amount Due:</td>
-				<td id="amount_due">0</td>
-			</tr>
-		</table>
-	</div>
 	</div>
 	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
