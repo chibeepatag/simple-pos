@@ -1,0 +1,37 @@
+table:not(#settings) {
+	width: 100%;
+}
+/*table td {
+	padding: 0.2em;
+}*/
+
+#list-tab {
+	flex-direction: row!important;
+}
+
+.customerItem, .productItem {
+	cursor: pointer;
+	-moz-user-select: none;
+	user-select: none;
+}
+
+.customerItem:hover, .productItem:hover{
+	background-color: #EEE;
+}
+
+.customerItem.toggled, .productItem:active{
+	background-color: #AAFFAA;
+}
+
+.invoice_lines tr>td:not(:first-child) {
+	text-align: right;
+}
+
+
+#summary tr>td:not(:first-child) {
+	text-align: right;
+}
+
+/*summary tbody>tr:last-child{
+	border
+}*/

@@ -1,5 +1,6 @@
 $("document").ready(function(){
-	simplePos.listCustomers();
+    simplePos.initTabs();
+    simplePos.listCustomers();
     simplePos.listProducts();
     simplePos.listSettings();
 });
@@ -7,37 +8,81 @@ $("document").ready(function(){
 var simplePos = (function() {
     'use strict';
 
+    function initTabs(){
+        var tabs = [
+            'Products',
+            'Customers',
+            'Settings',
+        ]
+        
+        var html = "";
+        var listTab = $("#list-tab");
+
+        tabs.forEach(tab=>{
+            // html += `<a class="list-group-item list-group-item-action" id="list-${tab.toLowerCase()}-list" data-toggle="list" href="#tab_${tab.toLowerCase()}" role="tab" aria-controls="${tab.toLowerCase()}">
+            html += `<a class="nav-item nav-link" id="list-${tab.toLowerCase()}-list" href="#tab_${tab.toLowerCase()}" data-toggle="tab" role="tab" aria-controls="${tab.toLowerCase()}">
+                            ${tab}
+                        </a>`;
+
+        });
+        listTab.append(html);
+        listTab.find('a:first-child').click();
+        return true;        
+    }
+
  	function listProducts(){
+        var html = ''
  		dbMock.products.forEach(function(product){
  		var tax_exempt = 'no'
  		if(product.tax_exempt){
  			tax_exempt = 'yes'
  		}
- 		var html = `<tr id=product_${product.id}>
- 				<td>${product.name}</td>
- 				<td>${product.retail_price}</td>
- 				<td>${tax_exempt}</td>
- 				<td><button onclick="simplePos.addToInvoice(${product.id})">Add</button></td>
- 			</tr>`
- 		$("#products").append(html)
- 		})
+        // html += `<div class='card col-sm-6 col-md-4 col-lg-2' id=product_${product.id} onclick="simplePos.addToInvoice(${product.id})">
+        //                 <div class='card-body d-flex  flex-column'>
+        //                     <div class='text-right'>
+        //                         <sup> \$ ${product.retail_price}
+        //                         ${tax_exempt === 'yes' ? '<br>Tax Exempted' : ''}
+        //                         </sup>
+        //                     </div>
+        //                     <h3 class='card-title mt-auto'>${product.name}</h3>
+        //                 </div>
+        //             </div>`;
+        // html += `<div class='container productItem border col-sm-6 col-md-4 col-lg-2 d-flex flex-column' id=product_${product.id} onclick="simplePos.addToInvoice(${product.id})">
+        html += `<div class='col-sm-6 col-md-4 col-lg-2 productItem border' id=product_${product.id} onclick="simplePos.addToInvoice(${product.id})">
+                    <div class='text-right'>
+                        <sup> \$ ${product.retail_price}
+                        ${tax_exempt === 'yes' ? '<br>Tax Exempted' : ''}
+                        </sup>
+                    </div>
+                    <h3 class='mt-auto'>${product.name}</h3>
+                </div>`;
+ 		});
+        $("#products").append(html);
  		return true;
  	}
 
  	function listCustomers(){
+        var html = '';
  		dbMock.customers.forEach(function(customer){
  			var tax_exempt = 'no'
 	 		if(customer.tax_exempt){
 	 			tax_exempt = 'yes'
 	 		}
- 			var html = `<tr id=customer_${customer.id}>
- 				<td>${customer.name}</td>
- 				<td>${customer.discount}</td>
- 				<td>${tax_exempt}</td>
- 				<td><button onclick="simplePos.setCustomer(${customer.id})">Set</button></td>
- 				</tr>`
- 			$("#customers").append(html)
- 		})
+            // html += `<tr id=customer_${customer.id}>
+            // 	<td>${customer.name}</td>
+            // 	<td>${customer.discount}</td>
+            // 	<td>${tax_exempt}</td>
+            // 	<td><button class='btn' onclick="simplePos.setCustomer(${customer.id})">Set</button></td>
+            // 	</tr>`
+            html += `<div class='p-1 col-sm-6 col-md-4 col-lg-2 customerItem border' id='customer_${customer.id}' onclick="simplePos.setCustomer(${customer.id}, this)">
+                    <h5 class='mt-auto'>${customer.name}</h5>
+                    <div class='pl-4'>
+                        <span>Discount: ${customer.discount}</span> <br/>
+                        <span>Tax Exempt: ${tax_exempt}</span>
+                    </div>
+                </div>`;
+        })
+ 		$("#customers").append(html);
  		return true;
  	}
 
@@ -46,20 +91,22 @@ var simplePos = (function() {
  		var settings_values = Object.values(dbMock.settings)
  		settings_values.forEach(function(setting){
             var function_name = setting.code.charAt(0).toUpperCase() + setting.code.substring(1);
- 			html += `<tr>
-                    <td>${setting.name}</td>
-                    <td>
-                        <input type="checkbox" checked onclick="simplePos.toggle${function_name}()">
-                        <span class="slider"></span>
-                   </td>
-                   </tr>`
+            html += `
+            <div class='d-flex justify-content-start px-3 mb-2'>
+                <div class='d-inline-block'>
+                    <input type="checkbox" checked onclick="simplePos.toggle${function_name}()">
+                    <span class="slider"></span>
+                </div>
+                <span class='pl-2' >${setting.name}</span>
+            </div>
+            `;
             
  		})
  		$("#settings").append(html)
  		return true;
  	}
 
- 	function setCustomer(customerId){
+ 	function setCustomer(customerId, tgt = null){
  		var customer = dbMock.customers.find(function(customer){
  			return customer.id == customerId
  		})
@@ -70,7 +117,12 @@ var simplePos = (function() {
  		invoiceLines.forEach(function(line){
  			setDiscount(line, discount)
  		})
- 		
+
+        if(tgt !== null) {
+            $('.customerItem.toggled').removeClass('toggled');
+            // debugger;
+            $(tgt).addClass('toggled');
+        } 		
  	}
 
     function getDiscount(product){
@@ -184,19 +236,20 @@ var simplePos = (function() {
  		var invoiceLines = Object.values(invoice.invoiceLines)
  		invoiceLines.forEach(function(line){
  			var line_html = `<tr>
- 								<td>${line.product.name}</td>
- 								<td>${line.product.retail_price}</td>
+                                <td class='d-flex justify-content-between align-bottom'>${line.product.name}</td>
+ 								<!--<td class='d-flex justify-content-between align-bottom'><span>${line.product.name}</span> &emsp; x&nbsp;${line.quantity}</td>-->
+                                <td>${line.product.retail_price.toFixed(2)}</td>
  								<td>${line.quantity}</td>
  								<td onclick="simplePos.getDiscount('${line.product.name}');">${line.discount}</td>
- 								<td>${line.subtotal}</td>
+ 								<td>${line.subtotal.toFixed(2)}</td>
  							</tr>`
  			html = html.concat(line_html)
  		})
         $(".invoice_lines").html(html)
-        $("#invoice_subtotal").html(invoice.subtotal)
-        $("#invoice_discount").html(invoice.discount_amount)
-        $("#invoice_total_tax").html(invoice.total_tax)
-        $("#amount_due").html(invoice.amount)
+        $("#invoice_subtotal").html(invoice.subtotal.toFixed(2))
+        $("#invoice_discount").html(invoice.discount_amount.toFixed(2))
+        $("#invoice_total_tax").html(invoice.total_tax.toFixed(2))
+        $("#amount_due").html(invoice.amount.toFixed(2))
  	}
 
     function toggleEnableTax(){
@@ -272,6 +325,7 @@ var simplePos = (function() {
     }
 
     return {
+        initTabs: initTabs,
         listProducts: listProducts,
         listCustomers: listCustomers,
         listSettings: listSettings,
