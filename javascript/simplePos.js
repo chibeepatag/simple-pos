@@ -8,6 +8,7 @@ $("document").ready(function(){
     simplePos.listCustomers();
     simplePos.listProducts();
     simplePos.listSettings();    
+    simplePos.setCustomer(1)
 });
 
 var simplePos = (function() {
@@ -175,7 +176,7 @@ var simplePos = (function() {
                 // tax embedded in price
                 } else {
 
-                    // value of tax in price
+                    // price without tax
                     const taxExclusive = ((line.retail_price * line.quantity)/(taxPercentage+1))
 
                     // item is tax exempted, retain price and tax
@@ -183,7 +184,7 @@ var simplePos = (function() {
                     
                     // customer is exempted
                     // remove tax from price
-                    if(customerExempt) { 
+                    if(customerExempt) {
                         taxOffset -= (line.retail_price * line.quantity) - taxExclusive
                     } else { 
                         // add to tax computed
@@ -194,14 +195,20 @@ var simplePos = (function() {
         })
 
         document.getElementById('subtotal').innerText = subtotal
-        document.getElementById('discount').innerText = discount
-
+        
         if(!taxInclusive) {
             document.getElementById('total_tax').innerText = tax
             document.getElementById('amount_due').innerText = subtotal - discount + tax
+            document.getElementById('discount').innerText = discount
         } else {
-            document.getElementById('total_tax').innerText = taxOffset
-            document.getElementById('amount_due').innerText = subtotal - discount + taxOffset
+            const totalDiscount = (subtotal + taxOffset) * (parseInt(dbMock.openInvoice.customer.discount) * 0.01)
+            document.getElementById('discount').innerText = totalDiscount
+            if(customerExempt) {
+                document.getElementById('total_tax').innerText = taxOffset
+            } else {
+                document.getElementById('total_tax').innerText = tax
+            }
+            document.getElementById('amount_due').innerText = subtotal - totalDiscount + taxOffset
         }
     }
 

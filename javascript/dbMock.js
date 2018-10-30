@@ -31,6 +31,16 @@ var dbMock = (function() {
  		  name: 'Peter Reyes',
  		  discount: '0',
  		  tax_exempt: true
+ 		},
+ 		{ id: 3,
+ 		  name: 'John Doe',
+ 		  discount: '0',
+ 		  tax_exempt: false
+ 		},
+ 		{ id: 4,
+ 		  name: 'Juan dela Cruz',
+ 		  discount: '5%',
+ 		  tax_exempt: true
  		}
  	]
  	const tax_rates = [
