@@ -1,7 +1,13 @@
 $("document").ready(function(){
-	simplePos.listCustomers();
+    // db.fetchData().then(() => {
+    //     simplePos.listCustomers();
+    //     simplePos.listProducts();
+    //     simplePos.listSettings();    
+    // });
+
+    simplePos.listCustomers();
     simplePos.listProducts();
-    simplePos.listSettings();
+    simplePos.listSettings();    
 });
 
 var simplePos = (function() {
@@ -70,6 +76,7 @@ var simplePos = (function() {
  			line.discount = discount
  		})
  		refreshInvoice()
+        refreshSummary()
  	}
 
  	function addToInvoice(productId){
@@ -85,8 +92,16 @@ var simplePos = (function() {
  		if(dbMock.openInvoice.customer){
  			discount = dbMock.openInvoice.customer.discount
  		}
- 		dbMock.openInvoice.invoiceLines[product.name]= {product: product, quantity: quantity, retail_price: product.retail_price, discount: discount, subtotal: 0}  
+ 		dbMock.openInvoice.invoiceLines[product.name]= {
+            product: product, 
+            quantity: quantity, 
+            retail_price: product.retail_price, 
+            discount: discount, 
+            subtotal: product.retail_price * quantity
+        }
+
  		refreshInvoice();
+        refreshSummary()
  	}
 
  	function refreshInvoice(){
@@ -100,7 +115,7 @@ var simplePos = (function() {
  			var line_html = `<tr>
  								<td>${line.product.name}</td>
  								<td>${line.product.retail_price}</td>
- 								<td>${line.quantity}</td>
+ 								<td><input type="number" id="quantity_${line.product.id}" min="1" value="${line.quantity}" onChange="simplePos.updateLines(${line.product.id})"></td>
  								<td>${line.discount}</td>
  								<td>${line.subtotal}</td>
  							</tr>`
@@ -108,13 +123,96 @@ var simplePos = (function() {
  		})
  		$(".invoice_lines").html(html)
  	}
+    
+    function updateLines(productId) {
+        console.log("update " + productId)
+        var product = dbMock.products.find(function(product){
+            return product.id == productId
+        })
+
+        var line = dbMock.openInvoice.invoiceLines[product.name]
+        var quantity = parseInt(document.getElementById("quantity_" + line.product.id).value)
+        var discount = 0
+        if(dbMock.openInvoice.customer){
+            discount = dbMock.openInvoice.customer.discount
+        }
+
+        dbMock.openInvoice.invoiceLines[product.name] = {
+            product: product, 
+            quantity: quantity, 
+            retail_price: product.retail_price, 
+            discount: discount, 
+            subtotal: product.retail_price * quantity
+        }  
+
+        refreshInvoice()
+        refreshSummary()
+    }
+
+    function refreshSummary() {
+        var taxEnabled = dbMock.settings['enableTax'].value
+        var taxInclusive = dbMock.settings['taxInclusive'].value
+        var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
+        var taxPercentage = parseInt(dbMock.tax_rates[0].rate) * 0.01
+        var customerExempt = dbMock.openInvoice.customer.tax_exempt
+        var subtotal = 0
+        var discount = 0
+        var tax = 0
+        var taxOffset = 0
+        invoiceLines.forEach(function(line){
+            subtotal += line.retail_price * line.quantity
+            discount += line.retail_price * line.quantity * parseInt(line.discount) * 0.01
+            if(taxEnabled) {
+                // need to compute tax separately
+                if(!taxInclusive) {
+                    // customer is exempted
+                    // item is tax exempted
+                    // do not add tax
+                    if(customerExempt || line.product.tax_exempt) { return }
+
+                    tax += line.retail_price * line.quantity * taxPercentage
+
+                // tax embedded in price
+                } else {
+
+                    // value of tax in price
+                    const taxExclusive = ((line.retail_price * line.quantity)/(taxPercentage+1))
+
+                    // item is tax exempted, retain price and tax
+                    if(line.product.tax_exempt) { return }
+                    
+                    // customer is exempted
+                    // remove tax from price
+                    if(customerExempt) { 
+                        taxOffset -= (line.retail_price * line.quantity) - taxExclusive
+                    } else { 
+                        // add to tax computed
+                        tax += (line.retail_price * line.quantity) - taxExclusive 
+                    }
+                }
+            }
+        })
+
+        document.getElementById('subtotal').innerText = subtotal
+        document.getElementById('discount').innerText = discount
+
+        if(!taxInclusive) {
+            document.getElementById('total_tax').innerText = tax
+            document.getElementById('amount_due').innerText = subtotal - discount + tax
+        } else {
+            document.getElementById('total_tax').innerText = taxOffset
+            document.getElementById('amount_due').innerText = subtotal - discount + taxOffset
+        }
+    }
 
     function toggleEnableTax(){
        dbMock.settings['enableTax'].value = !dbMock.settings['enableTax'].value;
+       refreshSummary()
     }
 
     function toggleTaxInclusive(){
         dbMock.settings['taxInclusive'].value = !dbMock.settings['taxInclusive'].value;
+        refreshSummary()
     }
 
     function toggleSingleTax(){
@@ -138,6 +236,7 @@ var simplePos = (function() {
         listSettings: listSettings,
         setCustomer: setCustomer,
         addToInvoice: addToInvoice,
+        updateLines: updateLines,
         toggleEnableTax: toggleEnableTax,
         toggleTaxInclusive: toggleTaxInclusive,
         toggleSingleTax: toggleSingleTax, 
