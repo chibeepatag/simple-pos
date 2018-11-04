@@ -24,7 +24,7 @@ var simplePos = (function() {
  				<td>${product.name}</td>
  				<td>${product.retail_price}</td>
  				<td>${tax_exempt}</td>
- 				<td><button onclick="simplePos.addToInvoice(${product.id})">Add</button></td>
+ 				<td><button onclick="simplePos.addToInvoice(${product.id})" id="add_product_${product.id}">Add</button></td>
  			</tr>`
  		$("#products").append(html)
  		})

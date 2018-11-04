@@ -193,3 +193,16 @@ QUnit.test("Set Invoice Amount Due", function(assert){
   var invoice = dbMock.openInvoice
   assert.equal(invoice.amount, 1428.8, "Invoice Amount Due (tax exclusive)")
 })
+
+QUnit.test("Quanties are editable fields", function(assert){
+  let doc = document.getElementById('testFrame').contentWindow.document
+  let button = doc.getElementById("add_product_1")
+  button.click()
+
+  var editableField = doc.getElementById("quantity_1")
+  assert.ok(editableField, "Quantity field is exitsing")
+  assert.notOk(editableField.disabled, false, "Quantity of line should be editable")
+
+  editableField.value = 10
+  assert.equal(editableField.value, 10, "Quantity updatable")
+})
