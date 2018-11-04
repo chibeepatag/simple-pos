@@ -76,8 +76,9 @@ var simplePos = (function() {
  		invoiceLines.forEach(function(line){
  			line.discount = discount
  		})
- 		refreshInvoice()
-        refreshSummary()
+ 		
+        setInvoiceDiscount()
+        refreshInvoice()
  	}
 
  	function addToInvoice(productId){
@@ -101,8 +102,8 @@ var simplePos = (function() {
             subtotal: product.retail_price * quantity
         }
 
- 		refreshInvoice();
-        refreshSummary()
+        setInvoiceDiscount()
+ 		refreshInvoice();   
  	}
 
  	function refreshInvoice(){
@@ -112,13 +113,16 @@ var simplePos = (function() {
  		}
  		var html = ""
  		var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
+        var taxInclusive = dbMock.settings.taxInclusive.value
  		invoiceLines.forEach(function(line){
  			var line_html = `<tr>
  								<td>${line.product.name}</td>
  								<td>${line.product.retail_price}</td>
- 								<td><input type="number" id="quantity_${line.product.id}" min="1" value="${line.quantity}" onChange="simplePos.updateLines(${line.product.id})"></td>
+ 								<td><input type="number" 
+                                    id="quantity_${line.product.id}" min="1" value="${line.quantity}" 
+                                    onChange="simplePos.updateLines(${line.product.id})"></td>
  								<td>${line.discount}</td>
- 								<td>${line.subtotal}</td>
+ 								<td>${ taxInclusive ? line.nontaxed_amount : line.taxed_amount }</td>
  							</tr>`
  			html = html.concat(line_html)
  		})
@@ -126,7 +130,6 @@ var simplePos = (function() {
  	}
     
     function updateLines(productId) {
-        console.log("update " + productId)
         var product = dbMock.products.find(function(product){
             return product.id == productId
         })
@@ -146,80 +149,139 @@ var simplePos = (function() {
             subtotal: product.retail_price * quantity
         }  
 
-        refreshInvoice()
+        setInvoiceDiscount()
+        refreshInvoice()        
+    }
+
+    function getDiscount(amount, percentage) {
+        return amount * percentToDec(percentage)
+    }
+
+    function setDiscount(line, discount) {
+        line.discount = discount
+        line.discount_amount = getDiscount(line.product.retail_price * line.quantity, discount)
+    }
+
+    function computeTaxableSale(retail_price, quantity, discount_amount, tax_rate, tax_inclusive) {
+        var total_retail = retail_price * quantity
+        var discount_reduced = total_retail - discount_amount
+        if(tax_inclusive) {
+            var tax_precentage = percentToDec(dbMock.tax_rates[0].rate)
+            return discount_reduced - computeTax(discount_reduced, tax_rate)/(tax_precentage+1)
+        } else {
+            return discount_reduced
+        }
+    }
+
+    function computeTax(taxable_sales, tax_rate) { 
+        return taxable_sales * percentToDec(tax_rate)
+    }
+
+    function percentToDec(tax_rate) {
+        return parseInt(tax_rate) * 0.01
+    }
+
+    function setTax(line) {
+        if(line.product.tax_exempt) {
+            line.tax_amount = 0
+        } else {
+            var tax_inclusive = dbMock.settings['taxInclusive'].value
+            var tax_rate = dbMock.tax_rates[0].rate
+            var discount_amount = getDiscount(line.product.retail_price * line.quantity, line.discount)
+            var taxable_sales = computeTaxableSale(line.product.retail_price, line.quantity, discount_amount, tax_rate, tax_inclusive)
+            line.tax_amount = parseFloat(computeTax(taxable_sales, tax_rate).toFixed(2))
+        }
+    }
+
+    function setLineSubtotal(line) {
+        var total = line.product.retail_price * line.quantity
+        var tax_inclusive = dbMock.settings.taxInclusive.value
+        
+        line.subtotal = total - line.discount_amount
+        if(!tax_inclusive) { line.subtotal += line.tax_amount }
+
+        line.taxed_amount = total - line.discount_amount + line.tax_amount
+        line.nontaxed_amount = total - line.discount_amount
+    }
+
+    function setInvoiceDiscount() {
+        var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
+        var total = 0
+        var customer = dbMock.openInvoice.customer
+        var customerDiscount = customer ? customer.discount : "0%"
+        invoiceLines.forEach(function(line) {
+            setDiscount(line, customerDiscount)
+            total += line.discount_amount
+        })
+        dbMock.openInvoice.discount_amount = parseFloat(total.toFixed(2))
+        setInvoiceTotalTax()
+    }
+
+    function setInvoiceTotalTax() {
+        var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
+        var total = 0
+        var customer = dbMock.openInvoice.customer
+        var customerDiscount = customer ? customer.discount : "0%"
+        invoiceLines.forEach(function(line) {
+            setTax(line)
+            total += line.tax_amount
+        })
+        dbMock.openInvoice.total_tax = parseFloat(total.toFixed(2))
+        setInvoiceSubtotal()
+    }
+
+    function setInvoiceSubtotal() {
+        var tax_inclusive = dbMock.settings.taxInclusive.value
+        var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
+        var total = 0
+        var customer = dbMock.openInvoice.customer
+        var customerDiscount = customer ? customer.discount : "0%"
+        invoiceLines.forEach(function(line) {
+            setLineSubtotal(line)
+            total += line.nontaxed_amount
+        })
+        dbMock.openInvoice.subtotal = parseFloat(total.toFixed(2))
+        setInvoiceAmount()
+    }
+
+    function setInvoiceAmount() {
+        var tax_inclusive = dbMock.settings.taxInclusive.value
+        var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
+        var total = 0
+        var customer = dbMock.openInvoice.customer
+        var customerDiscount = customer ? customer.discount : "0%"
+        invoiceLines.forEach(function(line) {
+            total += line.subtotal 
+        })
+        dbMock.openInvoice.amount = parseFloat(total.toFixed(2))
         refreshSummary()
     }
 
     function refreshSummary() {
-        var taxEnabled = dbMock.settings['enableTax'].value
-        var taxInclusive = dbMock.settings['taxInclusive'].value
-        var invoiceLines = Object.values(dbMock.openInvoice.invoiceLines)
-        var taxPercentage = parseInt(dbMock.tax_rates[0].rate) * 0.01
-        var customerExempt = dbMock.openInvoice.customer.tax_exempt
-        var subtotal = 0
-        var discount = 0
-        var tax = 0
-        var taxOffset = 0
-        invoiceLines.forEach(function(line){
-            subtotal += line.retail_price * line.quantity
-            discount += line.retail_price * line.quantity * parseInt(line.discount) * 0.01
-            if(taxEnabled) {
-                // need to compute tax separately
-                if(!taxInclusive) {
-                    // customer is exempted
-                    // item is tax exempted
-                    // do not add tax
-                    if(customerExempt || line.product.tax_exempt) { return }
-
-                    tax += line.retail_price * line.quantity * taxPercentage
-
-                // tax embedded in price
-                } else {
-
-                    // price without tax
-                    const taxExclusive = ((line.retail_price * line.quantity)/(taxPercentage+1))
-
-                    // item is tax exempted, retain price and tax
-                    if(line.product.tax_exempt) { return }
-                    
-                    // customer is exempted
-                    // remove tax from price
-                    if(customerExempt) {
-                        taxOffset -= (line.retail_price * line.quantity) - taxExclusive
-                    } else { 
-                        // add to tax computed
-                        tax += (line.retail_price * line.quantity) - taxExclusive 
-                    }
-                }
-            }
-        })
-
-        document.getElementById('subtotal').innerText = subtotal
+        var invoice = dbMock.openInvoice
+        var subtotalLbl = $('#subtotal')[0]
+        var taxLbl = $('#total_tax')[0]
+        var amntLbl = $('#amount_due')[0]
+        var discLbl = $('#discount')[0]
         
-        if(!taxInclusive) {
-            document.getElementById('total_tax').innerText = tax
-            document.getElementById('amount_due').innerText = subtotal - discount + tax
-            document.getElementById('discount').innerText = discount
-        } else {
-            const totalDiscount = (subtotal + taxOffset) * (parseInt(dbMock.openInvoice.customer.discount) * 0.01)
-            document.getElementById('discount').innerText = totalDiscount
-            if(customerExempt) {
-                document.getElementById('total_tax').innerText = taxOffset
-            } else {
-                document.getElementById('total_tax').innerText = tax
-            }
-            document.getElementById('amount_due').innerText = subtotal - totalDiscount + taxOffset
+        if(subtotalLbl) {
+            subtotal.innerText = invoice.subtotal
+            taxLbl.innerText = invoice.total_tax
+            amntLbl.innerText = invoice.amount
+            discLbl.innerText = invoice.discount_amount
         }
     }
 
     function toggleEnableTax(){
        dbMock.settings['enableTax'].value = !dbMock.settings['enableTax'].value;
-       refreshSummary()
+       setInvoiceDiscount()
+       refreshInvoice()
     }
 
     function toggleTaxInclusive(){
         dbMock.settings['taxInclusive'].value = !dbMock.settings['taxInclusive'].value;
-        refreshSummary()
+        setInvoiceDiscount()
+        refreshInvoice()
     }
 
     function toggleSingleTax(){
@@ -227,15 +289,18 @@ var simplePos = (function() {
     }
 
  	function reset(){
- 		dbMock.openInvoice.invoiceLines = []
- 		dbMock.openInvoice.customer = null
- 		dbMock.openInvoice.amount = 0
- 		dbMock.openInvoice.tax = 0
-
-        dbMock.settings['enableTax'].value = true;
+        resetInvoice()
+        dbMock.settings['enableTax'].value = true
         dbMock.settings['singleTax'].value = true
         dbMock.settings['taxInclusive'].value = true
  	}
+
+    function resetInvoice() {
+        dbMock.openInvoice.invoiceLines = []
+        dbMock.openInvoice.customer = null
+        dbMock.openInvoice.amount = 0
+        dbMock.openInvoice.tax = 0   
+    }
 
     return {
         listProducts: listProducts,
@@ -244,9 +309,19 @@ var simplePos = (function() {
         setCustomer: setCustomer,
         addToInvoice: addToInvoice,
         updateLines: updateLines,
+        getDiscount: getDiscount,
         toggleEnableTax: toggleEnableTax,
         toggleTaxInclusive: toggleTaxInclusive,
         toggleSingleTax: toggleSingleTax, 
         reset: reset,
+        setDiscount: setDiscount,
+        computeTaxableSale: computeTaxableSale,
+        computeTax: computeTax,
+        setTax: setTax,
+        setLineSubtotal: setLineSubtotal,
+        setInvoiceSubtotal: setInvoiceSubtotal,
+        setInvoiceDiscount: setInvoiceDiscount,
+        setInvoiceTotalTax: setInvoiceTotalTax,
+        resetInvoice: resetInvoice
     };
 }());

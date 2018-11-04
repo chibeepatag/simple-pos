@@ -12,7 +12,7 @@ var dbMock = (function() {
  	    },
  	    { id: 3,
  	      name: 'Sony PlayStation',
- 	      retail_price: 100,
+ 	      retail_price: 300,
  	      tax_exempt: true 
  	    },
  	    { id: 4,
@@ -30,16 +30,6 @@ var dbMock = (function() {
  		{ id: 2,
  		  name: 'Peter Reyes',
  		  discount: '0',
- 		  tax_exempt: true
- 		},
- 		{ id: 3,
- 		  name: 'John Doe',
- 		  discount: '0',
- 		  tax_exempt: false
- 		},
- 		{ id: 4,
- 		  name: 'Juan dela Cruz',
- 		  discount: '5%',
  		  tax_exempt: true
  		}
  	]
